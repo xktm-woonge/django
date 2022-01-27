@@ -16,8 +16,20 @@ topics = [
 ]
 # Create your views here.
 
-def HTMLtemplate(articleTag):
+def HTMLtemplate(articleTag, id=None):
     global topics
+
+    contextUI = ''
+    if id != None:
+        contextUI = f'''
+            <li>
+                <form action="/delete/" method="post">
+                    <input type="hidden" name="id" value={id}>
+                    <input type = "submit" value="delete">
+                </form>
+            </li>
+            <li><a href="/update/{id}">update</a></li>
+        '''
 
     ol = ''
     for topic in topics:
@@ -32,6 +44,12 @@ def HTMLtemplate(articleTag):
         {articleTag}
         <ul>
             <li><a href="/create/">create</li>
+            <li>
+                <form action="/delete/" method="post">
+                    <input type="hidden" name="id" value={id}>
+                    <input type = "submit" value="delete">
+                </form>
+            </li>
         </ul>
     </body>
     </html>
@@ -74,7 +92,46 @@ def read(request, id):
     for topic in topics:
         if topic['id'] ==int(id):
             article = f'<h2>{topic["title"]}</h2>{topic["body"]}'
-    return HttpResponse(HTMLtemplate(article))
+    return HttpResponse(HTMLtemplate(article, id))
 
 
+@csrf_exempt
+def delete(request):
+    global topics
+    if request.method == 'POST':
+        id = request.POST['id']
+        newTopic = []
+        for topic in topics:
+            if topic['id'] != int(id):
+                newTopic.append(topic)
+        topics = newTopic
+        return redirect('/')
+
+@csrf_exempt
+def update(request, id):
+    global topics
+    if request.method == 'GET':
+        for topic in topics:
+            if topic['id'] == int(id):
+                selectedTopic = {
+                    "title":topic['title'],
+                    "body":topic['body']
+                }
+        article = '''
+            <form action="/update/{id}">
+                <p><input type="text" name="title" placeholder="title" value={selcetedTopic["title"]}></p>
+                <p><textarea name="body" placeholder="body" value={selcetedTopic["body"]}></textarea></p>
+                <p><input type="submit"></p>
+            </form>    
+        '''
+        return HttpResponse(HTMLtemplate(article, id))
+    
+    elif request.method == 'POST':
+        title = request.POST['title']
+        body = request.POST['body']
+        for topic in topics:
+            if topic['id'] == int(id):
+                topic['title'] == title
+                topic['body'] == body
+        return redirect(f'/read/{id}')
 
